@@ -1,7 +1,7 @@
 """
 - Representação (genótipo): Permutação de string de bits.
-  - Cada indivíduo será uma lista de 8 strings de 8 bits
-  - Cada string de 8 bits representa uma linha do tabuleiro
+  - Cada indivíduo será uma lista de 8 strings de 3 bits.
+  - Cada string de 3 bits representa um número de 1 a 8 (coluna da rainha de uma linha).
 - Recombinação: “cut-and-crossfill” crossover
 - Probabilidade de Recombinação: 90%
 - Mutação: troca de genes
@@ -17,6 +17,17 @@ avaliações de fitness
 - Fitness
   - Número de pares de rainhas que não se atacam
 """
+
+'''
+    - TODO: estatísticas
+    - Em quantas execuções o algoritmo convergiu das 30;
+    - Em que iteração o algoritmo convergiu (média e desvio padrão);
+    - Número de indivíduos que convergiram por execução;
+    - Fitness médio da população em cada uma das 30 execuções;
+    - Colocar gráficos de convergência com a média e o melhor indivíduo por iteração;
+    - Fitness médio alcançado nas 30 execuções (média e desvio padrão);
+    - Análise adicional: Quantas iterações são necessárias para toda a população convergir?
+'''
 import random
 
 TOTAL_RUN_TIMES = 30
@@ -30,7 +41,7 @@ MUTATION_PROBABILITY = 0.4
 
 
 def initialize_population():
-    permutation = [format(2**i, '08b') for i in range(8)]
+    permutation = [str(bin(i)) for i in range(1,9)]
     population = [random.sample(permutation, 8) for _ in range(POPULATION_SIZE)]
     return population
 
@@ -46,7 +57,7 @@ def fitness(individual):
                 fitness -= 1
             # mesma diagonal (diferença entre as linhas é igual à diferença entre as colunas)
             offset = j - i
-            if abs(individual[i].find('1') - individual[j].find('1')) == offset:
+            if abs(int(individual[i], 2) - int(individual[j], 2)) == offset:
                 fitness -= 1
             
     return fitness
@@ -65,11 +76,25 @@ def survival_selection(population):
 def crossover(parents):
     # TODO: “cut-and-crossfill”, garantir que filho é uma permutação
     children = []
+    cross_point = random.randint(1, 7)
+    
+    par1_cross = parents[1][cross_point:] + parents[1][:cross_point]
+    child1 = parents[0][:cross_point]
+    for gene in par1_cross:
+        if gene not in child1:
+            child1.append(gene)
+    
+    child2 = parents[1][:cross_point]
+    par0_cross = parents[0][cross_point:] + parents[0][:cross_point]
+    for gene in par0_cross:
+        if gene not in child2:
+            child2.append(gene)
+
+    children += [child1, child2]
     return children
 
 def mutation(population):
     # Escolhe dois genes aleatórios e troca os valores
-    # ! Não sei se a probabilidade devia entrar aqui por indivíduo ou lá fora (por iteração)
     for individual in population:
         if random.random() < MUTATION_PROBABILITY:
             gene1, gene2 = random.sample(range(8), 2)
@@ -79,6 +104,11 @@ def mutation(population):
 def is_solution(population):
     for individual in population:
         if fitness(individual) == 28:
+            for i in range(8):
+                line = [0] * 8
+                line[int(individual[i],2)-1] = 1
+                print(line)
+            print ('\n')
             return True
     return False
 
@@ -121,3 +151,4 @@ if __name__ == '__main__':
     initial_population = initialize_population()
     population, num_iterations = find_solution(initial_population)
     analyze_solution(population, num_iterations)
+
