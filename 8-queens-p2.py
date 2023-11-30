@@ -11,8 +11,7 @@
     - Testar trocando seleção por roleta!
 '''
 import random
-import numpy as np
-import matplotlib.pyplot as plt
+from utils.plot import plot_graph
 
 TOTAL_RUN_TIMES = 30
 POPULATION_SIZE = 50
@@ -47,9 +46,11 @@ def fitness(individual):
 
 def parents_selection(population):
     # Pais = 2 melhores de 5
-    selected = random.sample(population, SELECTION_SIZE)
-    selected.sort(key=lambda individual: fitness(individual), reverse=True)
-    return selected[0:NUM_PARENTS]
+    fitness_list = [fitness(individual) for individual in population]
+    total_fitness = sum(fitness_list)
+    probabilities = [(ind_fitness / total_fitness) for ind_fitness in fitness_list]
+    selected_individuals = random.choices(population, probabilities, k=POPULATION_SIZE)
+    return selected_individuals
 
 def survival_selection(population):
     # Sobreviventes = 100 melhores
@@ -144,20 +145,6 @@ def analyze_solution(population):
             converged_individuals += 1
 
     return converged_individuals, (fitness_sum / POPULATION_SIZE), fitness_max
-
-def plot_graph(y, title, x_label, y_label):
-    mean = np.mean(y)
-    std = np.std(y)
-
-    plt.figure(figsize=(12, 4))
-    plt.plot(y, color='blue', linewidth=2)
-    plt.axhline(y=mean, color='r', linestyle='--')
-    plt.axhline(y=mean + std, color='r', linestyle='--')
-    plt.axhline(y=mean - std, color='r', linestyle='--')
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title(title)
-    plt.show()
 
 if __name__ == '__main__':
   converged_iterations_count = 0

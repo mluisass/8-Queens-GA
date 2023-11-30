@@ -29,6 +29,7 @@ avaliações de fitness
     - Análise adicional: Quantas iterações são necessárias para toda a população convergir?
 '''
 import random
+from utils.plot import plot_graph
 
 TOTAL_RUN_TIMES = 30
 POPULATION_SIZE = 100
@@ -104,16 +105,14 @@ def mutation(population):
 def is_solution(population):
     for individual in population:
         if fitness(individual) == 28:
-            for i in range(8):
-                line = [0] * 8
-                line[int(individual[i],2)-1] = 1
-                print(line)
-            print ('\n')
             return True
     return False
 
-def find_solution(population):
+def find_solution(population, analyze):
     num_iterations = 0
+    iteration_converged = 0
+    fitness_mean = []
+    best_fitness = []
     while num_iterations < MAX_NUM_ITERATIONS:
         parents = parents_selection(population)
         children = parents
@@ -122,17 +121,22 @@ def find_solution(population):
         children = mutation(children)
         population.extend(children)
         population = survival_selection(population)
+        if(analyze):
+            _, fit_mean, best_fit = analyze_solution(population)
+            fitness_mean.append(fit_mean)
+            best_fitness.append(best_fit)
         num_iterations += 1
         if is_solution(population):
             break
-    return population, num_iterations
+    return population, num_iterations, iteration_converged, fitness_mean, best_fitness
 
-def analyze_solution(population, num_iterations):
+def analyze_solution(population):
     # Calcula o fitness médio, max e mínimo
     # ! Talvez dê pra fazer isso durante a execução pra plotar no final
     fitness_sum = 0
     fitness_max = 0
     fitness_min = 28
+    converged_individuals = 0
 
     for individual in population:
         individual_fitness = fitness(individual)
@@ -141,14 +145,38 @@ def analyze_solution(population, num_iterations):
             fitness_max = individual_fitness
         if individual_fitness < fitness_min:
             fitness_min = individual_fitness
-    print('Fitness médio:', fitness_sum / POPULATION_SIZE)
-    print('Fitness máximo:', fitness_max)
-    print('Fitness mínimo:', fitness_min)
-    print('Número de iterações:', num_iterations)
+        if individual_fitness == 28:
+            converged_individuals += 1
+
+    return converged_individuals, (fitness_sum / POPULATION_SIZE), fitness_max
 
 if __name__ == '__main__':
+  converged_iterations_count = 0
+  num_iterations_list = []
+  converged_per_execution = []
+  fit_mean_per_execution = []
   for run_time in range(0, TOTAL_RUN_TIMES):
     initial_population = initialize_population()
-    population, num_iterations = find_solution(initial_population)
-    analyze_solution(population, num_iterations)
+    population, num_iterations, iteration_converged, fit_mean, best_fit = find_solution(initial_population, True if run_time == TOTAL_RUN_TIMES-1 else False)
+    num_iterations_list.append(num_iterations)
+    converged_iterations_count += iteration_converged
+    converged_count, fitness_mean, _ = analyze_solution(population)
+    converged_per_execution.append(converged_count)
+    fit_mean_per_execution.append(fitness_mean)
+
+  print('Número de iterações convergidas: ', converged_iterations_count)
+
+  # Informações sobre iterações e média
+  plot_graph(num_iterations_list, 'Número de iterações por execução', 'Execução', 'Número de iterações')
+
+  # Média do fitness por iteração
+  plot_graph(fit_mean_per_execution, 'Fitness médio por execução', 'Execução', 'Fitness médio')
+  
+  # Melhor indivíduo por iteração
+  print(best_fit)
+  plot_graph(best_fit, 'Melhor indivíduo por iteração', 'Iteração', 'Fitness')
+
+  # Fitness médio por iteração
+  print(fit_mean)
+  plot_graph(fit_mean, 'Fitness médio por iteração', 'Iteração', 'Fitness médio')
 
